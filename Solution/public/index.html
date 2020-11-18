@@ -6,43 +6,122 @@
     <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css" />
     <title>Microsoft Teams Tab</title>
     <script src="https://unpkg.com/@microsoft/teams-js/dist/MicrosoftTeams.min.js" crossorigin="anonymous"></script>
-    <script src=" https://unpkg.com/@microsoft/mgt@1.3.4/dist/bundle/mgt-loader.js"></script>
-    <mgt-teams-provider
-    client-id="<YOUR_CLIENT_ID>"
-    auth-popup-url="https://<YOUR_NGROK_URL>/auth.html"
-    scopes="User.Read, User.Read.All, Calendars.Read, Contacts.Read, People.Read, Group.Read.All, Group.ReadWrite.All, Tasks.Read, Tasks.ReadWrite, Mail.ReadBasic, Mail.Read, Mail.ReadWrite"
-  ></mgt-teams-provider>
+    <script src="https://unpkg.com/@microsoft/mgt@2.0.0-preview.6/dist/bundle/mgt-loader.js"></script>
+
   </head>
   <body>
+    <mgt-teams-provider
+      client-id="%REACT_APP_CLIENT_ID%"
+      auth-popup-url="/auth.html"></mgt-teams-provider>
+
+    <mgt-msal-provider
+      client-id="%REACT_APP_CLIENT_ID%"
+      scopes="user.read,people.read,user.readbasic.all,contacts.read,calendars.read,presence.read.all,tasks.readwrite,presence.read,user.read.all,group.read.all,tasks.read"
+      redirect-uri="http://localhost:4000"
+      depends-on="mgt-teams-provider"
+    ></mgt-msal-provider>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <mgt-login>
+      <template data-type="signed-in-button-content">
+        <mgt-person person-query="me" show-presence show-name view="oneLine"></mgt-person>
+      </template>
+      <template data-type="flyout-person-details">
+        <mgt-person-card person-query="me" show-presence></mgt-person-card>
+      </template>
+    </mgt-login>
 
-    <mgt-login></mgt-login>
+    <mgt-person person-query="cprice@sebastienlevert365.onmicrosoft.com"></mgt-person>
 
     <div class="row" id="content">
-
-      <div class="column" id="one">
-        <mgt-agenda></mgt-agenda>
+    
+      <div class="column">
+        <h2>My Agenda</h2>
+        <mgt-agenda show-max="7" days="10">
+          <template data-type="event">
+            <div class="root">
+              <div class="time-container">
+                <div class="date">{{ dayFromDateTime(event.start.dateTime)}}</div>
+                <div class="time">{{ timeRangeFromEvent(event) }}</div>
+              </div>
+        
+              <div class="separator">
+                <div class="vertical-line top"></div>
+                <div class="circle">
+                  <div data-if="!event.bodyPreview.includes('Join Microsoft Teams Meeting')" class="inner-circle">
+                  </div>
+                </div>
+                <div class="vertical-line bottom"></div>
+              </div>
+        
+              <div class="details">
+                <div class="subject">{{ event.subject }}</div>
+                <div class="location" data-if="event.location.displayName && !event.onlineMeeting">
+                  at
+                  <a href="https://bing.com/maps/default.aspx?where1={{event.location.displayName}}"
+                    target="_blank"><b>{{ event.location.displayName }}</b></a>
+                </div>
+                <div class="attendees" data-if="event.attendees.length">
+                  <span class="attendee" data-for="attendee in event.attendees">
+                    <mgt-person fetch-image="true" person-query="{{attendee.emailAddress.address}}" show-presence person-card="hover"></mgt-person>
+                      
+                      
+                  </span>
+                </div>
+                <div class="online-meeting" data-if="event.onlineMeeting">
+                  <img class="online-meeting-icon" src="https://img.icons8.com/fluent/48/000000/microsoft-teams-2019.png" />
+                  <a class="online-meeting-link" href="{{ event.onlineMeeting.joinUrl }}">Join Teams Meeting</a>
+                </div>
+              </div>
+            </div>
+          </template>
+        </mgt-agenda>
       </div>
 
-      <div class="column" id="two">
-        <mgt-tasks></mgt-tasks>
+      <div class="column">
+        <h2>My Tasks</h2>
+        <mgt-tasks data-source="todo"></mgt-tasks>
       </div>
 
-      <div class="column" id="three">
-        <mgt-get resource="/me/messages" version="beta" scopes="mail.read" max-pages="1">
+      <div class="column">
+        <h2>My Emails</h2>
+        <mgt-get id="mgt-email" resource="/me/messages" scopes="mail.read" max-pages="1">
           <template>
-             <div class="email" data-for="email in value">
-                 <h4><mgt-person person-query="{{email.sender.emailAddress.address}}" show-name person-card="hover"></mgt-person></h4>
-                  <h3>{{ email.subject }}</h3>
-                  <div data-if="email.bodyPreview" class="preview" innerHtml>{{email.bodyPreview}}</div>
-                  <div data-else class="preview">email body is empty</div>
-             </div>
-           </template>
-           <template data-type="loading">loading</template>
-           <template data-type="error">{{ this }} </template>
-        </mgt-get>  
+            <div class="email" data-for="email in value">
+              <div class="header">                
+                <h4>
+                  <mgt-person person-query="{{email.sender.emailAddress.address}}" view="oneline" person-card="hover">
+                  </mgt-person>         
+                </h4>
+                <span class="command-bar">
+                  <a class="command-bar-action" href="{{ email.webLink }}" target="_blank" >
+                    <span class="ms-Icon--MailReply" aria-hidden="true"></span>
+                  </a>
+                </span>       
+              </div>
+              <div class="title">
+                <h3>{{ email.subject }}</h3>
+                <span class="date">
+                  {{ getFormattedDate(email.receivedDateTime) }}
+                </span>
+              </div>
+              <div data-if="email.bodyPreview" class="preview" innerHtml>{{email.bodyPreview}}</div>
+              <div data-else class="preview empty-body">
+                Empty email
+              </div>
+            </div>
+          </template>
+
+          <template data-type="loading">
+            loading
+          </template>
+
+          <template data-type="error">
+            {{ this }}
+          </template>
+        </mgt-get>
       </div>
       
+    </div>      
   </body>
 </html>
