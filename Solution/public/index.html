@@ -17,7 +17,7 @@
     <mgt-msal-provider
       client-id="%REACT_APP_CLIENT_ID%"
       scopes="user.read,people.read,user.readbasic.all,contacts.read,calendars.read,presence.read.all,tasks.readwrite,presence.read,user.read.all,group.read.all,tasks.read"
-      redirect-uri="http://localhost:4000"
+      redirect-uri="http://localhost:3000"
       depends-on="mgt-teams-provider"
     ></mgt-msal-provider>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -30,8 +30,6 @@
         <mgt-person-card person-query="me" show-presence></mgt-person-card>
       </template>
     </mgt-login>
-
-    <mgt-person person-query="cprice@sebastienlevert365.onmicrosoft.com"></mgt-person>
 
     <div class="row" id="content">
     
